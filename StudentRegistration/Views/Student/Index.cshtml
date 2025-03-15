@@ -1,0 +1,227 @@
+﻿@{
+    ViewData["Title"] = "Student Registration";
+}
+
+<h2>Student Registration</h2>
+
+<form id="studentForm">
+    <div class="form-group">
+        <label>Name:</label>
+        <input type="text" id="Name" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label>Mobile:</label>
+        <input type="text" id="Mobile" class="form-control" required maxlength="10">
+    </div>
+
+    <div class="form-group">
+        <label>Gender:</label>
+        <input type="radio" name="Gender" value="Male"> Male
+        <input type="radio" name="Gender" value="Female"> Female
+    </div>
+
+    <div class="form-group">
+        <label>Email:</label>
+        <input type="email" id="Email" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label>Address:</label>
+        <textarea id="Address" class="form-control"></textarea>
+    </div>
+
+    <div class="form-group">
+        <label>Date of Birth:</label>
+        <input type="date" id="DOB" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label>Class:</label>
+        <input type="text" id="Class" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label>Father's Name:</label>
+        <input type="text" id="FatherName" class="form-control" required>
+    </div>
+
+    <div class="form-group">
+        <label>Mother's Name:</label>
+        <input type="text" id="MotherName" class="form-control" required>
+    </div>
+
+    <button type="button" id="saveBtn" class="btn btn-primary">Save</button>
+</form>
+
+<h2>Student List</h2>
+<table id="studentTable" class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Mobile</th>
+            <th>Gender</th>
+            <th>Email</th>
+            <th>Class</th>
+            <th>Father Name</th>
+            <th>Mother Name</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<!-- Bootstrap Modal for Editing Student -->
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Student</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editStudentID">
+                <label>Name:</label>
+                <input type="text" id="editName" class="form-control">
+                <label>Mobile:</label>
+                <input type="text" id="editMobile" class="form-control">
+                <label>Gender:</label>
+                <select id="editGender" class="form-control">
+                    <option>Male</option>
+                    <option>Female</option>
+                </select>
+                <label>Email:</label>
+                <input type="email" id="editEmail" class="form-control">
+                <label>Class:</label>
+                <input type="text" id="editClass" class="form-control">
+                <label>Father Name:</label>
+                <input type="text" id="editFatherName" class="form-control">
+                <label>Mother Name:</label>
+                <input type="text" id="editMotherName" class="form-control">
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="updateStudentBtn" class="btn btn-success">Update</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        loadStudents();
+
+        $("#saveBtn").click(function () {
+            var studentData = {
+                Name: $("#Name").val(),
+                Mobile: $("#Mobile").val(),
+                Gender: $("input[name='Gender']:checked").val(),
+                Email: $("#Email").val(),
+                Address: $("#Address").val(),
+                DOB: $("#DOB").val(),
+                Class: $("#Class").val(),
+                FatherName: $("#FatherName").val(),
+                MotherName: $("#MotherName").val()
+            };
+
+            $.ajax({
+                url: "/Student/SaveStudent",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(studentData),
+                success: function (response) {
+                    alert(response.message);
+                    if (response.success) {
+                        $("#studentForm")[0].reset();
+                        loadStudents();
+                    }
+                }
+            });
+        });
+
+        function loadStudents() {
+            $.ajax({
+                url: "/Student/GetStudents",
+                type: "GET",
+                success: function (data) {
+                    var tableBody = $("#studentTable tbody");
+                    tableBody.empty();
+
+                    $.each(data, function (index, student) {
+                        var row = `<tr>
+                            <td>${student.name}</td>
+                            <td>${student.mobile}</td>
+                            <td>${student.gender}</td>
+                            <td>${student.email}</td>
+                            <td>${student.class}</td>
+                            <td>${student.fatherName}</td>
+                            <td>${student.motherName}</td>
+                                <td>
+                                    <button class="btn btn-warning editBtn" data-id="${student.studentID}">Edit</button>
+                                    <button class="btn btn-danger deleteBtn" data-id="${student.studentID}">Delete</button>
+                                </td>
+                        </tr>`;
+                        tableBody.append(row);
+                    });
+                }
+            });
+        }
+
+        $(document).on("click", ".editBtn", function () {
+            var studentID = $(this).data("id");
+            $.ajax({
+                url: "/Student/GetStudents",
+                type: "GET",
+                success: function (data) {
+                    var student = data.find(s => s.studentID == studentID);
+                    $("#editStudentID").val(student.studentID);
+                    $("#editName").val(student.name);
+                    $("#editMobile").val(student.mobile);
+                    $("#editGender").val(student.gender);
+                    $("#editEmail").val(student.email);
+                    $("#editClass").val(student.class);
+                    $("#editFatherName").val(student.fatherName);
+                    $("#editMotherName").val(student.motherName);
+                    $("#editStudentModal").modal("show");
+                }
+            });
+        });
+
+        $("#updateStudentBtn").click(function () {
+            var studentData = {
+                StudentID: $("#editStudentID").val(),
+                Name: $("#editName").val(),
+                Mobile: $("#editMobile").val(),
+                Gender: $("#editGender").val(),
+                Email: $("#editEmail").val(),
+                Class: $("#editClass").val(),
+                FatherName: $("#editFatherName").val(),
+                MotherName: $("#editMotherName").val()
+            };
+
+            $.post("/Student/UpdateStudent", studentData, function (response) {
+                alert(response.message);
+                $("#editStudentModal").modal("hide");
+                loadStudents();
+            });
+        });
+
+        $(document).on("click", ".deleteBtn", function () {
+            var studentID = $(this).data("id");
+            $.post("/Student/DeleteStudent", { studentID: studentID }, function (response) {
+                alert(response.message);
+                loadStudents();
+            });
+        });
+
+
+    });
+</script>
+
+
+
+
+
